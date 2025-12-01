@@ -4,7 +4,7 @@ Pytest configuration and shared fixtures for RAG system tests
 import pytest
 import sys
 from pathlib import Path
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock, MagicMock, patch
 from typing import List, Dict, Any
 import tempfile
 import shutil
@@ -214,3 +214,76 @@ def error_search_results():
         distances=[],
         error="No course found matching 'NonExistent Course'"
     )
+
+
+@pytest.fixture
+def mock_rag_system():
+    """Create a mock RAG system for API testing"""
+    mock_rag = Mock()
+
+    # Default successful query response
+    mock_rag.query.return_value = (
+        "This is a test answer about computer use.",
+        [
+            {
+                "text": "Welcome to Building Toward Computer Use",
+                "link": "https://example.com/lesson/0"
+            }
+        ]
+    )
+
+    # Default course analytics
+    mock_rag.get_course_analytics.return_value = {
+        "total_courses": 1,
+        "course_titles": ["Building Towards Computer Use with Anthropic"]
+    }
+
+    # Mock session manager
+    mock_rag.session_manager = Mock()
+    mock_rag.session_manager.create_session.return_value = "test-session-123"
+
+    return mock_rag
+
+
+@pytest.fixture
+def sample_query_request():
+    """Create a sample query request payload"""
+    return {
+        "query": "What is computer use?",
+        "session_id": "test-session-123"
+    }
+
+
+@pytest.fixture
+def sample_query_request_no_session():
+    """Create a sample query request without session ID"""
+    return {
+        "query": "What is computer use?"
+    }
+
+
+@pytest.fixture
+def sample_query_response():
+    """Create a sample query response"""
+    return {
+        "answer": "Computer use allows Claude to interact with computers.",
+        "sources": [
+            {
+                "text": "Welcome to Building Toward Computer Use",
+                "link": "https://example.com/lesson/0"
+            }
+        ],
+        "session_id": "test-session-123"
+    }
+
+
+@pytest.fixture
+def sample_course_stats():
+    """Create sample course statistics"""
+    return {
+        "total_courses": 2,
+        "course_titles": [
+            "Building Towards Computer Use with Anthropic",
+            "Introduction to LLMs"
+        ]
+    }
