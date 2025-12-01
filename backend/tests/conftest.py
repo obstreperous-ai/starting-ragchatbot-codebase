@@ -1,19 +1,21 @@
 """
 Pytest configuration and shared fixtures for RAG system tests
 """
-import pytest
-import sys
-from pathlib import Path
-from unittest.mock import Mock, MagicMock
-from typing import List, Dict, Any
-import tempfile
+
 import shutil
+import sys
+import tempfile
+from pathlib import Path
+from typing import Any, Dict, List
+from unittest.mock import MagicMock, Mock
+
+import pytest
 
 # Add backend directory to path
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
-from models import Course, Lesson, CourseChunk
+from models import Course, CourseChunk, Lesson
 from vector_store import SearchResults
 
 
@@ -28,14 +30,14 @@ def sample_course():
             Lesson(
                 lesson_number=0,
                 title="Introduction",
-                lesson_link="https://learn.deeplearning.ai/courses/building-toward-computer-use-with-anthropic/lesson/a6k0z/introduction"
+                lesson_link="https://learn.deeplearning.ai/courses/building-toward-computer-use-with-anthropic/lesson/a6k0z/introduction",
             ),
             Lesson(
                 lesson_number=1,
                 title="Tool Use Basics",
-                lesson_link="https://learn.deeplearning.ai/courses/building-toward-computer-use-with-anthropic/lesson/b7l1a/tool-use-basics"
-            )
-        ]
+                lesson_link="https://learn.deeplearning.ai/courses/building-toward-computer-use-with-anthropic/lesson/b7l1a/tool-use-basics",
+            ),
+        ],
     )
 
 
@@ -48,15 +50,15 @@ def sample_course_chunks():
             course_title="Building Towards Computer Use with Anthropic",
             lesson_number=0,
             chunk_index=0,
-            lesson_link="https://learn.deeplearning.ai/courses/building-toward-computer-use-with-anthropic/lesson/a6k0z/introduction"
+            lesson_link="https://learn.deeplearning.ai/courses/building-toward-computer-use-with-anthropic/lesson/a6k0z/introduction",
         ),
         CourseChunk(
             content="In this lesson, you'll learn about tool use and how Claude can interact with external tools.",
             course_title="Building Towards Computer Use with Anthropic",
             lesson_number=1,
             chunk_index=1,
-            lesson_link="https://learn.deeplearning.ai/courses/building-toward-computer-use-with-anthropic/lesson/b7l1a/tool-use-basics"
-        )
+            lesson_link="https://learn.deeplearning.ai/courses/building-toward-computer-use-with-anthropic/lesson/b7l1a/tool-use-basics",
+        ),
     ]
 
 
@@ -67,10 +69,7 @@ def mock_vector_store():
 
     # Default search returns empty results
     mock_store.search.return_value = SearchResults(
-        documents=[],
-        metadata=[],
-        distances=[],
-        error=None
+        documents=[], metadata=[], distances=[], error=None
     )
 
     mock_store.get_existing_course_titles.return_value = []
@@ -87,16 +86,21 @@ def populated_mock_vector_store(sample_course_chunks):
     # Simulate successful search with results
     mock_store.search.return_value = SearchResults(
         documents=[chunk.content for chunk in sample_course_chunks],
-        metadata=[{
-            'course_title': chunk.course_title,
-            'lesson_number': chunk.lesson_number,
-            'lesson_link': chunk.lesson_link
-        } for chunk in sample_course_chunks],
+        metadata=[
+            {
+                "course_title": chunk.course_title,
+                "lesson_number": chunk.lesson_number,
+                "lesson_link": chunk.lesson_link,
+            }
+            for chunk in sample_course_chunks
+        ],
         distances=[0.1, 0.2],
-        error=None
+        error=None,
     )
 
-    mock_store.get_existing_course_titles.return_value = ["Building Towards Computer Use with Anthropic"]
+    mock_store.get_existing_course_titles.return_value = [
+        "Building Towards Computer Use with Anthropic"
+    ]
     mock_store.get_course_count.return_value = 1
 
     return mock_store
@@ -136,10 +140,12 @@ def mock_anthropic_client_with_tool_use():
     # Second response: final answer after tool execution
     final_response = Mock()
     final_response.stop_reason = "end_turn"
-    final_response.content = [Mock(
-        text="Based on the search results, computer use allows Claude to interact with computers.",
-        type="text"
-    )]
+    final_response.content = [
+        Mock(
+            text="Based on the search results, computer use allows Claude to interact with computers.",
+            type="text",
+        )
+    ]
 
     # Configure mock to return different responses on subsequent calls
     mock_client.messages.create.side_effect = [tool_response, final_response]
@@ -177,32 +183,28 @@ def sample_search_results():
     return SearchResults(
         documents=[
             "Welcome to Building Toward Computer Use with Anthropic.",
-            "Tool use allows Claude to interact with external systems."
+            "Tool use allows Claude to interact with external systems.",
         ],
         metadata=[
             {
-                'course_title': "Building Towards Computer Use with Anthropic",
-                'lesson_number': 0,
-                'lesson_link': "https://example.com/lesson/0"
+                "course_title": "Building Towards Computer Use with Anthropic",
+                "lesson_number": 0,
+                "lesson_link": "https://example.com/lesson/0",
             },
             {
-                'course_title': "Building Towards Computer Use with Anthropic",
-                'lesson_number': 1,
-                'lesson_link': "https://example.com/lesson/1"
-            }
+                "course_title": "Building Towards Computer Use with Anthropic",
+                "lesson_number": 1,
+                "lesson_link": "https://example.com/lesson/1",
+            },
         ],
-        distances=[0.1, 0.2]
+        distances=[0.1, 0.2],
     )
 
 
 @pytest.fixture
 def empty_search_results():
     """Create empty search results for testing"""
-    return SearchResults(
-        documents=[],
-        metadata=[],
-        distances=[]
-    )
+    return SearchResults(documents=[], metadata=[], distances=[])
 
 
 @pytest.fixture
@@ -212,5 +214,5 @@ def error_search_results():
         documents=[],
         metadata=[],
         distances=[],
-        error="No course found matching 'NonExistent Course'"
+        error="No course found matching 'NonExistent Course'",
     )

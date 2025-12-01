@@ -12,6 +12,7 @@ Usage:
 
 import os
 import sys
+
 from config import config
 from rag_system import RAGSystem
 
@@ -39,7 +40,7 @@ def load_all_documents():
 
     # List available files
     all_files = os.listdir(docs_path)
-    txt_files = [f for f in all_files if f.endswith('.txt')]
+    txt_files = [f for f in all_files if f.endswith(".txt")]
 
     print(f"\n3. Found {len(txt_files)} text files in docs folder:")
     for f in txt_files:
@@ -66,8 +67,10 @@ def load_all_documents():
     # Ask user if they want to clear existing data
     if current_count > 0:
         print(f"\n⚠️  Vector store already contains {current_count} course(s)")
-        response = input("   Clear existing data and reload? (yes/no): ").strip().lower()
-        if response in ['yes', 'y']:
+        response = (
+            input("   Clear existing data and reload? (yes/no): ").strip().lower()
+        )
+        if response in ["yes", "y"]:
             print("\n5. Clearing existing data...")
             rag.vector_store.clear_all_data()
             print("   ✅ Data cleared")
@@ -88,6 +91,7 @@ def load_all_documents():
     except Exception as e:
         print(f"\n❌ ERROR during loading: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 

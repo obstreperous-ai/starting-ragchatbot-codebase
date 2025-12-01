@@ -8,19 +8,21 @@ These tests verify:
 4. Empty database scenarios
 5. Data persistence
 """
-import pytest
+
+import shutil
 import sys
+import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
-import tempfile
-import shutil
+
+import pytest
 
 # Add backend directory to path
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
-from vector_store import VectorStore, SearchResults
-from models import Course, Lesson, CourseChunk
+from models import Course, CourseChunk, Lesson
+from vector_store import SearchResults, VectorStore
 
 
 class TestVectorStoreInitialization:
@@ -32,7 +34,7 @@ class TestVectorStoreInitialization:
         store = VectorStore(
             chroma_path=temp_chroma_path,
             embedding_model="all-MiniLM-L6-v2",
-            max_results=5
+            max_results=5,
         )
 
         # Assert
@@ -40,7 +42,9 @@ class TestVectorStoreInitialization:
         assert store.course_content is not None
         assert store.max_results == 5
 
-    def test_initialization_persists_data(self, temp_chroma_path, sample_course, sample_course_chunks):
+    def test_initialization_persists_data(
+        self, temp_chroma_path, sample_course, sample_course_chunks
+    ):
         """Test that data persists across VectorStore instances"""
         # Arrange & Act - First instance: add data
         store1 = VectorStore(temp_chroma_path, "all-MiniLM-L6-v2", 5)
@@ -71,7 +75,9 @@ class TestVectorStoreSearch:
         assert len(results.documents) == 0
         assert results.error is None
 
-    def test_search_with_populated_database(self, temp_chroma_path, sample_course, sample_course_chunks):
+    def test_search_with_populated_database(
+        self, temp_chroma_path, sample_course, sample_course_chunks
+    ):
         """Test searching populated database returns results"""
         # Arrange
         store = VectorStore(temp_chroma_path, "all-MiniLM-L6-v2", 5)
@@ -99,7 +105,7 @@ class TestVectorStoreSearch:
                 course_title=sample_course.title,
                 lesson_number=0,
                 chunk_index=i,
-                lesson_link=sample_course.lessons[0].lesson_link
+                lesson_link=sample_course.lessons[0].lesson_link,
             )
             for i in range(10)
         ]
@@ -123,7 +129,7 @@ class TestVectorStoreSearch:
                 course_title=sample_course.title,
                 lesson_number=0,
                 chunk_index=i,
-                lesson_link=sample_course.lessons[0].lesson_link
+                lesson_link=sample_course.lessons[0].lesson_link,
             )
             for i in range(10)
         ]
@@ -139,7 +145,9 @@ class TestVectorStoreSearch:
 class TestVectorStoreCourseFiltering:
     """Test suite for course name filtering"""
 
-    def test_search_with_exact_course_name(self, temp_chroma_path, sample_course, sample_course_chunks):
+    def test_search_with_exact_course_name(
+        self, temp_chroma_path, sample_course, sample_course_chunks
+    ):
         """Test searching with exact course name filter"""
         # Arrange
         store = VectorStore(temp_chroma_path, "all-MiniLM-L6-v2", 5)
@@ -147,17 +155,16 @@ class TestVectorStoreCourseFiltering:
         store.add_course_content(sample_course_chunks)
 
         # Act
-        results = store.search(
-            query="introduction",
-            course_name=sample_course.title
-        )
+        results = store.search(query="introduction", course_name=sample_course.title)
 
         # Assert
         assert not results.is_empty()
         for metadata in results.metadata:
-            assert metadata['course_title'] == sample_course.title
+            assert metadata["course_title"] == sample_course.title
 
-    def test_search_with_partial_course_name(self, temp_chroma_path, sample_course, sample_course_chunks):
+    def test_search_with_partial_course_name(
+        self, temp_chroma_path, sample_course, sample_course_chunks
+    ):
         """Test course name resolution with partial match"""
         # Arrange
         store = VectorStore(temp_chroma_path, "all-MiniLM-L6-v2", 5)
@@ -166,14 +173,15 @@ class TestVectorStoreCourseFiltering:
 
         # Act - Use partial name
         results = store.search(
-            query="introduction",
-            course_name="Computer Use"  # Partial match
+            query="introduction", course_name="Computer Use"  # Partial match
         )
 
         # Assert - Should still find results via semantic matching
         assert not results.is_empty() or results.error is not None
 
-    def test_search_with_nonexistent_course(self, temp_chroma_path, sample_course, sample_course_chunks):
+    def test_search_with_nonexistent_course(
+        self, temp_chroma_path, sample_course, sample_course_chunks
+    ):
         """Test searching for nonexistent course returns error"""
         # Arrange
         store = VectorStore(temp_chroma_path, "all-MiniLM-L6-v2", 5)
@@ -182,8 +190,7 @@ class TestVectorStoreCourseFiltering:
 
         # Act
         results = store.search(
-            query="test",
-            course_name="Completely Nonexistent Course Title XYZ123"
+            query="test", course_name="Completely Nonexistent Course Title XYZ123"
         )
 
         # Assert
@@ -194,7 +201,9 @@ class TestVectorStoreCourseFiltering:
 class TestVectorStoreLessonFiltering:
     """Test suite for lesson number filtering"""
 
-    def test_search_with_lesson_filter(self, temp_chroma_path, sample_course, sample_course_chunks):
+    def test_search_with_lesson_filter(
+        self, temp_chroma_path, sample_course, sample_course_chunks
+    ):
         """Test searching with lesson number filter"""
         # Arrange
         store = VectorStore(temp_chroma_path, "all-MiniLM-L6-v2", 5)
@@ -202,17 +211,16 @@ class TestVectorStoreLessonFiltering:
         store.add_course_content(sample_course_chunks)
 
         # Act
-        results = store.search(
-            query="content",
-            lesson_number=0
-        )
+        results = store.search(query="content", lesson_number=0)
 
         # Assert
         assert not results.is_empty()
         for metadata in results.metadata:
-            assert metadata['lesson_number'] == 0
+            assert metadata["lesson_number"] == 0
 
-    def test_search_with_course_and_lesson_filter(self, temp_chroma_path, sample_course, sample_course_chunks):
+    def test_search_with_course_and_lesson_filter(
+        self, temp_chroma_path, sample_course, sample_course_chunks
+    ):
         """Test searching with both course and lesson filters"""
         # Arrange
         store = VectorStore(temp_chroma_path, "all-MiniLM-L6-v2", 5)
@@ -221,16 +229,14 @@ class TestVectorStoreLessonFiltering:
 
         # Act
         results = store.search(
-            query="content",
-            course_name=sample_course.title,
-            lesson_number=1
+            query="content", course_name=sample_course.title, lesson_number=1
         )
 
         # Assert
         assert not results.is_empty()
         for metadata in results.metadata:
-            assert metadata['course_title'] == sample_course.title
-            assert metadata['lesson_number'] == 1
+            assert metadata["course_title"] == sample_course.title
+            assert metadata["lesson_number"] == 1
 
 
 class TestVectorStoreDataManagement:
@@ -297,7 +303,9 @@ class TestVectorStoreDataManagement:
         assert len(titles) == 1
         assert sample_course.title in titles
 
-    def test_clear_all_data(self, temp_chroma_path, sample_course, sample_course_chunks):
+    def test_clear_all_data(
+        self, temp_chroma_path, sample_course, sample_course_chunks
+    ):
         """Test clearing all data from vector store"""
         # Arrange
         store = VectorStore(temp_chroma_path, "all-MiniLM-L6-v2", 5)
@@ -320,9 +328,9 @@ class TestSearchResults:
         """Test creating SearchResults from ChromaDB results"""
         # Arrange
         chroma_results = {
-            'documents': [['doc1', 'doc2']],
-            'metadatas': [[{'key': 'value1'}, {'key': 'value2'}]],
-            'distances': [[0.1, 0.2]]
+            "documents": [["doc1", "doc2"]],
+            "metadatas": [[{"key": "value1"}, {"key": "value2"}]],
+            "distances": [[0.1, 0.2]],
         }
 
         # Act
@@ -337,11 +345,7 @@ class TestSearchResults:
     def test_from_chroma_with_empty_results(self):
         """Test creating SearchResults from empty ChromaDB results"""
         # Arrange
-        chroma_results = {
-            'documents': [[]],
-            'metadatas': [[]],
-            'distances': [[]]
-        }
+        chroma_results = {"documents": [[]], "metadatas": [[]], "distances": [[]]}
 
         # Act
         results = SearchResults.from_chroma(chroma_results)
@@ -363,7 +367,7 @@ class TestSearchResults:
         """Test is_empty() method"""
         # Arrange
         empty_results = SearchResults([], [], [])
-        populated_results = SearchResults(['doc'], [{'key': 'val'}], [0.1])
+        populated_results = SearchResults(["doc"], [{"key": "val"}], [0.1])
 
         # Assert
         assert empty_results.is_empty()
@@ -373,7 +377,9 @@ class TestSearchResults:
 class TestVectorStoreErrorHandling:
     """Test suite for error handling"""
 
-    def test_search_with_invalid_filter_handled(self, temp_chroma_path, sample_course, sample_course_chunks):
+    def test_search_with_invalid_filter_handled(
+        self, temp_chroma_path, sample_course, sample_course_chunks
+    ):
         """Test that search handles filter errors gracefully"""
         # Arrange
         store = VectorStore(temp_chroma_path, "all-MiniLM-L6-v2", 5)

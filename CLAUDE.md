@@ -17,6 +17,16 @@ cd backend && uv run uvicorn app:app --reload --port 8000
 
 # Install dependencies
 uv sync
+
+# Code Quality Tools
+./scripts/format.sh       # Auto-format code with black and isort
+./scripts/lint.sh         # Run linting checks (isort, black, flake8)
+./scripts/quality.sh      # Run all quality checks + tests
+
+# Manual quality commands
+uv run black backend/ main.py           # Format code
+uv run isort backend/ main.py           # Sort imports
+uv run flake8 backend/ main.py          # Lint code
 ```
 
 ## Architecture
@@ -63,3 +73,34 @@ Requires `ANTHROPIC_API_KEY` in `.env` file (see `.env.example`).
 - Always use UV to run the server do not use PIP
 - Make sure to use uv for ny dependencies
 - Use uv to run python
+
+## Code Quality
+
+The project uses the following code quality tools:
+
+- **Black** (v24+): Code formatter with 88 character line length
+- **isort** (v5.13+): Import statement sorter, configured to work with black
+- **flake8** (v7+): Linter for style guide enforcement
+
+### Configuration
+
+- `pyproject.toml`: Contains black and isort configuration
+- `.flake8`: Contains flake8 configuration (88 char line length, compatible with black)
+
+### Running Quality Checks
+
+Before committing code, ensure all quality checks pass:
+
+```bash
+./scripts/format.sh    # Auto-format your code
+./scripts/lint.sh      # Verify formatting and style
+./scripts/quality.sh   # Run full quality suite including tests
+```
+
+### Development Workflow
+
+1. Make your code changes
+2. Run `./scripts/format.sh` to auto-format
+3. Run `./scripts/lint.sh` to verify style compliance
+4. Run tests with `cd backend && uv run pytest`
+5. Or run everything with `./scripts/quality.sh`
